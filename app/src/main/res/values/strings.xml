@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WakeMeThere</string>
+    <string name="permission_explanation">You need allow location permission to add place from Places Picker</string>
 </resources>
