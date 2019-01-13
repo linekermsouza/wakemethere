@@ -36,7 +36,9 @@ import com.udacity.lineker.wakemethere.main.PlaceClickCallback;
 import com.udacity.lineker.wakemethere.main.PlacesViewModel;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
@@ -89,17 +91,28 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 if (placeEntries == null || placeEntries.size() == 0) {
 
                 } else {
+                    final Map<String,PlaceEntry> map = new HashMap<String,PlaceEntry>();
                     List<String> guids = new ArrayList<String>();
-                    for(PlaceEntry placeEntry : placeEntries) {
+                    for (PlaceEntry placeEntry : placeEntries) {
+                        map.put(placeEntry.getPlaceId(), placeEntry);
                         guids.add(placeEntry.getPlaceId());
                     }
+
                     PendingResult<PlaceBuffer> placeResult = Places.GeoDataApi.getPlaceById(mClient,
                             guids.toArray(new String[guids.size()]));
                     placeResult.setResultCallback(new ResultCallback<PlaceBuffer>() {
                         @Override
                         public void onResult(@NonNull PlaceBuffer places) {
-                            placeAdapter.setPlaceList(places);
-                            mGeofencing.updateGeofencesList(places);
+                            List<PlaceEntry> placeEntryList = new ArrayList<>();
+                            for (Place place : places) {
+                                PlaceEntry placeEntry = map.get(place.getId());
+                                placeEntry.setAddress(place.getAddress().toString());
+                                placeEntry.setName(place.getName().toString());
+                                placeEntryList.add(placeEntry);
+                            }
+                            placeAdapter.setPlaceList(placeEntryList);
+                            mGeofencing.updateGeofencesList(places, map);
+                            mGeofencing.unRegisterAllGeofences();
                             mGeofencing.registerAllGeofences();
                         }
                     });
@@ -162,18 +175,22 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
 
             // Extract the place information from the API
-            final String placeName = place.getName().toString();
-            final String placeAddress = place.getAddress().toString();
             final String placeID = place.getId();
+            Log.i(TAG, String.format("onActivityResult placeId %s", placeID));
 
             AppExecutors.getInstance().diskIO().execute(new Runnable() {
                 @Override
                 public void run() {
-                    PlaceEntry placeEntry = new PlaceEntry();
-                    //placeEntry.setName(placeName);
-                    //placeEntry.setAddress(placeAddress);
-                    placeEntry.setPlaceId(placeID);
-                    mDb.placeDao().insert(placeEntry);
+                    PlaceEntry placeEntry = mDb.placeDao().findPlaceByPlaceId(placeID);
+                    if (placeEntry == null) {
+                        placeEntry = new PlaceEntry();
+                        placeEntry.setPlaceId(placeID);
+                        placeEntry.setActive(true);
+                        mDb.placeDao().insert(placeEntry);
+                    } else {
+                        placeEntry.setActive(true);
+                        mDb.placeDao().update(placeEntry);
+                    }
                 }
             });
         }
@@ -198,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private final PlaceClickCallback placeClickCallback = new PlaceClickCallback() {
         @Override
-        public void onClick(final Place placeEntry) {
+        public void onClick(final PlaceEntry placeEntry) {
 
         }
     };

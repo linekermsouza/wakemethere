@@ -1,7 +1,7 @@
 package com.udacity.lineker.wakemethere.main;
 
-import com.google.android.gms.location.places.Place;
+import com.udacity.lineker.wakemethere.database.PlaceEntry;
 
 public interface PlaceClickCallback {
-    void onClick(Place place);
+    void onClick(PlaceEntry place);
 }

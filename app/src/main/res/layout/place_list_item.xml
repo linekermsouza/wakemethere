@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data>
-        <variable name="place" type="com.google.android.gms.location.places.Place"/>
+        <variable name="place" type="com.udacity.lineker.wakemethere.database.PlaceEntry"/>
         <variable name="callback" type="com.udacity.lineker.wakemethere.main.PlaceClickCallback"/>
     </data>
     <LinearLayout
@@ -23,7 +23,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
-                android:text="@{place.address}"
+                android:text="@{place.getAddress()}"
                 android:textColor="@android:color/white"/>
         </LinearLayout>
 

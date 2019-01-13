@@ -19,6 +19,9 @@ public interface PlaceDao {
     @Query("SELECT * FROM place ORDER BY id")
     List<PlaceEntry> loadAllSync();
 
+    @Query("SELECT * FROM place WHERE placeId=:placeId ORDER BY id")
+    PlaceEntry findPlaceByPlaceId(final String placeId);
+
     @Insert
     void insert(PlaceEntry placeEntry);
 

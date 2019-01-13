@@ -30,15 +30,17 @@ import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
+import com.udacity.lineker.wakemethere.database.PlaceEntry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Geofencing implements ResultCallback {
 
     // Constants
     public static final String TAG = Geofencing.class.getSimpleName();
-    private static final float GEOFENCE_RADIUS = 50; // 50 meters
+    private static final float GEOFENCE_RADIUS = 1000; // 1000 meters
     private static final long GEOFENCE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
     private List<Geofence> mGeofenceList;
@@ -108,11 +110,16 @@ public class Geofencing implements ResultCallback {
      * Uses the Place ID defined by the API as the Geofence object Id
      *
      * @param places the PlaceBuffer result of the getPlaceById call
+     * @param map
      */
-    public void updateGeofencesList(PlaceBuffer places) {
+    public void updateGeofencesList(PlaceBuffer places, Map<String, PlaceEntry> map) {
         mGeofenceList = new ArrayList<>();
         if (places == null || places.getCount() == 0) return;
         for (Place place : places) {
+            PlaceEntry placeEntry = map.get(place.getId());
+            if (!placeEntry.isActive()) {
+                continue;
+            }
             // Read the place information from the DB cursor
             String placeUID = place.getId();
             double placeLat = place.getLatLng().latitude;
@@ -122,7 +129,7 @@ public class Geofencing implements ResultCallback {
                     .setRequestId(placeUID)
                     .setExpirationDuration(GEOFENCE_TIMEOUT)
                     .setCircularRegion(placeLat, placeLng, GEOFENCE_RADIUS)
-                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER | Geofence.GEOFENCE_TRANSITION_EXIT)
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
                     .build();
             // Add it to the list
             mGeofenceList.add(geofence);

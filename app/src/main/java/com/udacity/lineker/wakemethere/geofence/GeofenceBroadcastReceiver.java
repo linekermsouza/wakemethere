@@ -25,13 +25,18 @@ import android.util.Log;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 import com.udacity.lineker.wakemethere.R;
+import com.udacity.lineker.wakemethere.database.AppDatabase;
+import com.udacity.lineker.wakemethere.database.AppExecutors;
+import com.udacity.lineker.wakemethere.database.PlaceEntry;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
     public static final String TAG = GeofenceBroadcastReceiver.class.getSimpleName();
+    private AppDatabase mDb;
 
     /***
      * Handles the Broadcast message sent when the Geofence Transition is triggered
@@ -42,7 +47,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
      * @param intent
      */
     @Override
-    public void onReceive(Context context, Intent intent) {
+    public void onReceive(final Context context, Intent intent) {
         Log.i(TAG, "onReceive called");
         // Get the Geofence Event from the Intent sent through
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
@@ -56,9 +61,29 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         // Check which transition type has triggered this event
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-            Log.i(TAG, "onReceive called GEOFENCE_TRANSITION_ENTER");
-            setAlarm(context);
-        } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            final List<Geofence> triggerList = geofencingEvent.getTriggeringGeofences();
+
+            mDb = AppDatabase.getInstance(context.getApplicationContext());
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    for (Geofence geofence : triggerList) {
+                        String placeId = geofence.getRequestId();
+                        Log.i(TAG, "onReceive called GEOFENCE_TRANSITION_ENTER placeId " + placeId);
+                        PlaceEntry placeEntry = mDb.placeDao().findPlaceByPlaceId(placeId);
+                        if (placeEntry != null) {
+                            if (placeEntry.isActive()) {
+                                placeEntry.setActive(false);
+                                mDb.placeDao().update(placeEntry);
+
+                                Log.i(TAG, "onReceive called GEOFENCE_TRANSITION_ENTER");
+                                setAlarm(context);
+                            }
+                        }
+                    }
+
+                }
+            });
 
         } else {
             // Log the error.

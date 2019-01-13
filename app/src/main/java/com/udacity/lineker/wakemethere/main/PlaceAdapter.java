@@ -10,13 +10,15 @@ import android.view.ViewGroup;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.udacity.lineker.wakemethere.R;
 
+import com.udacity.lineker.wakemethere.database.PlaceEntry;
 import com.udacity.lineker.wakemethere.databinding.PlaceListItemBinding;
 
+import java.util.List;
 
 
 public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHolder> {
 
-    private PlaceBuffer placeList;
+    private List<PlaceEntry> placeList;
 
     @Nullable
     private final PlaceClickCallback placeClickCallback;
@@ -25,7 +27,7 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
         this.placeClickCallback = placeClickCallback;
     }
 
-    public void setPlaceList(final PlaceBuffer placeList) {
+    public void setPlaceList(final List<PlaceEntry> placeList) {
         this.placeList = placeList;
         if (placeList != null) {
             // Force the RecyclerView to refresh
@@ -51,7 +53,7 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
 
     @Override
     public int getItemCount() {
-        return placeList == null ? 0 : placeList.getCount();
+        return placeList == null ? 0 : placeList.size();
     }
 
     static class PlaceViewHolder extends RecyclerView.ViewHolder {

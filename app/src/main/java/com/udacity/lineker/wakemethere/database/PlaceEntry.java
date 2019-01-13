@@ -11,6 +11,7 @@ public class PlaceEntry {
     private String name;
     private String address;
     private String placeId;
+    private boolean active;
 
     public int getId() {
         return id;
@@ -42,5 +43,14 @@ public class PlaceEntry {
 
     public void setPlaceId(String placeId) {
         this.placeId = placeId;
+    }
+
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }
