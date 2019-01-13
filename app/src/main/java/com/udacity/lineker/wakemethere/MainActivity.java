@@ -30,6 +30,7 @@ import com.udacity.lineker.wakemethere.database.AppDatabase;
 import com.udacity.lineker.wakemethere.database.AppExecutors;
 import com.udacity.lineker.wakemethere.database.PlaceEntry;
 import com.udacity.lineker.wakemethere.databinding.ActivityMainBinding;
+import com.udacity.lineker.wakemethere.geofence.Geofencing;
 import com.udacity.lineker.wakemethere.main.PlaceAdapter;
 import com.udacity.lineker.wakemethere.main.PlaceClickCallback;
 import com.udacity.lineker.wakemethere.main.PlacesViewModel;
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private GridLayoutManager mGridLayoutManager;
     private GoogleApiClient mClient;
+    private Geofencing mGeofencing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .enableAutoManage(this, this)
                 .build();
 
+        mGeofencing = new Geofencing(this, mClient);
 
         final PlacesViewModel viewModel =
                 ViewModelProviders.of(this).get(PlacesViewModel.class);
@@ -96,6 +99,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         @Override
                         public void onResult(@NonNull PlaceBuffer places) {
                             placeAdapter.setPlaceList(places);
+                            mGeofencing.updateGeofencesList(places);
+                            mGeofencing.registerAllGeofences();
                         }
                     });
                 }
