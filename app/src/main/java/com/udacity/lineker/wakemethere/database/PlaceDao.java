@@ -1,5 +1,6 @@
 package com.udacity.lineker.wakemethere.database;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Dao
 public interface PlaceDao {
+
+    @Query("SELECT * FROM place ORDER BY id")
+    LiveData<List<PlaceEntry>> loadAll();
 
     @Query("SELECT * FROM place ORDER BY id")
     List<PlaceEntry> loadAllSync();
