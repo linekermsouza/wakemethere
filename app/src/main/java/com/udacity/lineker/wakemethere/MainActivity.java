@@ -106,8 +106,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                             List<PlaceEntry> placeEntryList = new ArrayList<>();
                             for (Place place : places) {
                                 PlaceEntry placeEntry = map.get(place.getId());
-                                placeEntry.setAddress(place.getAddress().toString());
-                                placeEntry.setName(place.getName().toString());
+                                String address = place.getAddress().toString();
+                                String name = place.getName().toString();
+                                if (isReadable(name)) {
+                                    placeEntry.setAddress(address);
+                                    placeEntry.setName(name);
+                                } else {
+                                    // put name on address
+                                    placeEntry.setAddress(name);
+                                    placeEntry.setName(address);
+                                }
                                 placeEntryList.add(placeEntry);
                             }
                             placeAdapter.setPlaceList(placeEntryList);
@@ -125,20 +133,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     View.OnClickListener addPlaceListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    final Integer size = mDb.placeDao().loadAllSync().size();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(MainActivity.this, "" + size,
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-            });
-
             if (ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                     != PackageManager.PERMISSION_GRANTED) {
 
@@ -216,7 +210,16 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private final PlaceClickCallback placeClickCallback = new PlaceClickCallback() {
         @Override
         public void onClick(final PlaceEntry placeEntry) {
-
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
+                    if (placeEntryUpdate != null) {
+                        placeEntryUpdate.setActive(!placeEntryUpdate.isActive());
+                        mDb.placeDao().update(placeEntryUpdate);
+                    }
+                }
+            });
         }
     };
 
@@ -236,5 +239,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.e(TAG, "API Client Connection Failed!");
+    }
+
+    private boolean isReadable(String s) {
+        int count = 0;
+        for (int i = 0, len = s.length(); i < len; i++) {
+            if (Character.isDigit(s.charAt(i))) {
+                count++;
+            }
+        }
+        return count < s.length()/2;
     }
 }
