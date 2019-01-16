@@ -2,12 +2,14 @@ package com.udacity.lineker.wakemethere;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -26,6 +28,8 @@ import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
 import com.google.android.gms.location.places.ui.PlacePicker;
+import com.leo.simplearcloader.ArcConfiguration;
+import com.leo.simplearcloader.SimpleArcDialog;
 import com.udacity.lineker.wakemethere.database.AppDatabase;
 import com.udacity.lineker.wakemethere.database.AppExecutors;
 import com.udacity.lineker.wakemethere.database.PlaceEntry;
@@ -53,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private GridLayoutManager mGridLayoutManager;
     private GoogleApiClient mClient;
     private Geofencing mGeofencing;
+    private SimpleArcDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,24 +152,35 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private void callPlacePicker() {
         try {
+            ArcConfiguration arcConfiguration = new ArcConfiguration(this);
+            mDialog = new SimpleArcDialog(this);
+            mDialog.setConfiguration(arcConfiguration);
+            mDialog.show();
             PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
             Intent i = builder.build(MainActivity.this);
             startActivityForResult(i, PLACE_PICKER_REQUEST);
         } catch (GooglePlayServicesRepairableException e) {
+            mDialog.hide();
             Log.e(TAG, String.format("GooglePlayServices Not Available [%s]", e.getMessage()));
         } catch (GooglePlayServicesNotAvailableException e) {
+            mDialog.hide();
             Log.e(TAG, String.format("GooglePlayServices Not Available [%s]", e.getMessage()));
         } catch (Exception e) {
+            mDialog.hide();
             Log.e(TAG, String.format("PlacePicker Exception: %s", e.getMessage()));
         }
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.hide();
+        }
         // Log.i(TAG, String.format("onActivityResult %s %s", requestCode, resultCode));
         if (requestCode == PLACE_PICKER_REQUEST && resultCode == RESULT_OK) {
             Place place = PlacePicker.getPlace(this, data);
             if (place == null) {
                 Log.i(TAG, "No place selected");
+                mPlaceIdEditing = 0;
                 return;
             }
 
@@ -177,14 +193,28 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 public void run() {
                     PlaceEntry placeEntry = mDb.placeDao().findPlaceByPlaceId(placeID);
                     if (placeEntry == null) {
-                        placeEntry = new PlaceEntry();
-                        placeEntry.setPlaceId(placeID);
-                        placeEntry.setActive(true);
-                        mDb.placeDao().insert(placeEntry);
+                        if (mPlaceIdEditing > 0) {
+                            placeEntry = mDb.placeDao().findPlaceById(mPlaceIdEditing);
+                            placeEntry.setPlaceId(placeID);
+                            placeEntry.setActive(true);
+                            mDb.placeDao().update(placeEntry);
+                        } else {
+                            placeEntry = new PlaceEntry();
+                            placeEntry.setPlaceId(placeID);
+                            placeEntry.setActive(true);
+                            mDb.placeDao().insert(placeEntry);
+                        }
                     } else {
-                        placeEntry.setActive(true);
-                        mDb.placeDao().update(placeEntry);
+                        if (mPlaceIdEditing > 0 && mPlaceIdEditing != placeEntry.getId()) {
+                            PlaceEntry placeEntryEditing = mDb.placeDao().findPlaceById(mPlaceIdEditing);
+                            mDb.placeDao().delete(placeEntryEditing);
+                        } else {
+                            placeEntry.setActive(true);
+                            mDb.placeDao().update(placeEntry);
+                        }
+
                     }
+                    mPlaceIdEditing = 0;
                 }
             });
         }
@@ -207,19 +237,48 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
+    private int mPlaceIdEditing;
     private final PlaceClickCallback placeClickCallback = new PlaceClickCallback() {
         @Override
-        public void onClick(final PlaceEntry placeEntry) {
-            AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                @Override
-                public void run() {
-                    PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
-                    if (placeEntryUpdate != null) {
-                        placeEntryUpdate.setActive(!placeEntryUpdate.isActive());
-                        mDb.placeDao().update(placeEntryUpdate);
+        public void onClick(final PlaceEntry placeEntry, int action) {
+            if (action == PlaceClickCallback.ACTION_SWITCH) {
+                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
+                        if (placeEntryUpdate != null) {
+                            placeEntryUpdate.setActive(!placeEntryUpdate.isActive());
+                            mDb.placeDao().update(placeEntryUpdate);
+                        }
                     }
-                }
-            });
+                });
+            } else if (action == PlaceClickCallback.ACTION_EDIT) {
+                mPlaceIdEditing = placeEntry.getId();
+                callPlacePicker();
+            } else if (action == PlaceClickCallback.ACTION_REMOVE) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .setTitle(R.string.remove_place)
+                        .setMessage(R.string.remove_confirmation_msg)
+                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
+                        {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
+                                        if (placeEntryUpdate != null) {
+                                            mDb.placeDao().delete(placeEntryUpdate);
+                                        }
+                                    }
+                                });
+                            }
+
+                        })
+                        .setNegativeButton(R.string.no, null)
+                        .show();
+            }
         }
     };
 
