@@ -38,6 +38,7 @@ import com.udacity.lineker.wakemethere.geofence.Geofencing;
 import com.udacity.lineker.wakemethere.main.PlaceAdapter;
 import com.udacity.lineker.wakemethere.main.PlaceClickCallback;
 import com.udacity.lineker.wakemethere.main.PlacesViewModel;
+import com.udacity.lineker.wakemethere.widget.WakeMeThereService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -130,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                         }
                     });
                 }
+                WakeMeThereService.startActionUpdateWakeMeThereWidgets(MainActivity.this);
             }
         });
     }
@@ -186,22 +188,32 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
             // Extract the place information from the API
             final String placeID = place.getId();
+            final String name = place.getName().toString();
+            final String address = place.getAddress().toString();
+
             Log.i(TAG, String.format("onActivityResult placeId %s", placeID));
 
             AppExecutors.getInstance().diskIO().execute(new Runnable() {
                 @Override
                 public void run() {
+                    String complement = name;
+                    if (!isReadable(complement)) {
+                        complement = address;
+                    }
+
                     PlaceEntry placeEntry = mDb.placeDao().findPlaceByPlaceId(placeID);
                     if (placeEntry == null) {
                         if (mPlaceIdEditing > 0) {
                             placeEntry = mDb.placeDao().findPlaceById(mPlaceIdEditing);
                             placeEntry.setPlaceId(placeID);
+                            placeEntry.setName(complement);
                             placeEntry.setActive(true);
                             mDb.placeDao().update(placeEntry);
                         } else {
                             placeEntry = new PlaceEntry();
                             placeEntry.setPlaceId(placeID);
                             placeEntry.setActive(true);
+                            placeEntry.setName(complement);
                             mDb.placeDao().insert(placeEntry);
                         }
                     } else {

@@ -9,4 +9,7 @@
     <string name="remove_confirmation_msg">Are you sure you want to remove this place?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
+    <string name="active_places">Active places</string>
 </resources>

@@ -16,8 +16,8 @@ public interface PlaceDao {
     @Query("SELECT * FROM place ORDER BY id")
     LiveData<List<PlaceEntry>> loadAll();
 
-    @Query("SELECT * FROM place ORDER BY id")
-    List<PlaceEntry> loadAllSync();
+    @Query("SELECT * FROM place where active=1 ORDER BY id")
+    List<PlaceEntry> loadAllActivesSync();
 
     @Query("SELECT * FROM place WHERE placeId=:placeId ORDER BY id")
     PlaceEntry findPlaceByPlaceId(final String placeId);
