@@ -7,7 +7,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import com.google.android.gms.location.places.PlaceBuffer;
 import com.udacity.lineker.wakemethere.R;
 
 import com.udacity.lineker.wakemethere.database.PlaceEntry;
@@ -59,7 +58,7 @@ public class PlaceAdapter extends RecyclerView.Adapter<PlaceAdapter.PlaceViewHol
     static class PlaceViewHolder extends RecyclerView.ViewHolder {
         final PlaceListItemBinding binding;
 
-        public PlaceViewHolder(PlaceListItemBinding binding) {
+        PlaceViewHolder(PlaceListItemBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
         }

@@ -48,27 +48,26 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    public static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int PLACE_PICKER_REQUEST = 1;
     private static final int PERMISSIONS_REQUEST_FINE_LOCATION = 111;
     private static final String STATE_PLACEID_EDITING = "STATE_PLACEID_EDITING";
 
-    private ActivityMainBinding binding;
     private AppDatabase mDb;
     private PlaceAdapter placeAdapter;
 
-    private GridLayoutManager mGridLayoutManager;
     private GoogleApiClient mClient;
     private Geofencing mGeofencing;
     private SimpleArcDialog mDialog;
     private int mPlaceIdEditing;
+    private ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
-        Toolbar mActionBarToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar mActionBarToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(mActionBarToolbar);
         getSupportActionBar().setTitle(R.string.app_name);
 
@@ -77,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         placeAdapter = new PlaceAdapter(placeClickCallback);
 
-        mGridLayoutManager = new GridLayoutManager(this, getResources().getInteger(R.integer.place_list_columns));
+        GridLayoutManager mGridLayoutManager = new GridLayoutManager(this, getResources().getInteger(R.integer.place_list_columns));
         binding.recyclerview.setLayoutManager(mGridLayoutManager);
         binding.recyclerview.setAdapter(placeAdapter);
 
@@ -102,10 +101,15 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onChanged(@Nullable List<PlaceEntry> placeEntries) {
                 if (placeEntries == null || placeEntries.size() == 0) {
-
+                    placeAdapter.setPlaceList(new ArrayList<PlaceEntry>());
+                    mGeofencing.unRegisterAllGeofences();
+                    binding.tvEmptyList.setVisibility(View.VISIBLE);
+                    binding.recyclerview.setVisibility(View.INVISIBLE);
                 } else {
-                    final Map<String,PlaceEntry> map = new HashMap<String,PlaceEntry>();
-                    List<String> guids = new ArrayList<String>();
+                    binding.tvEmptyList.setVisibility(View.GONE);
+                    binding.recyclerview.setVisibility(View.VISIBLE);
+                    final Map<String,PlaceEntry> map = new HashMap<>();
+                    List<String> guids = new ArrayList<>();
                     for (PlaceEntry placeEntry : placeEntries) {
                         map.put(placeEntry.getPlaceId(), placeEntry);
                         guids.add(placeEntry.getPlaceId());
@@ -144,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
 
-    View.OnClickListener addPlaceListener = new View.OnClickListener() {
+    private final View.OnClickListener addPlaceListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             if (ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION)
@@ -251,7 +255,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 } else {
                     Toast.makeText(this, R.string.permission_explanation, Toast.LENGTH_SHORT).show();
                 }
-                return;
             }
         }
     }
@@ -259,43 +262,46 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private final PlaceClickCallback placeClickCallback = new PlaceClickCallback() {
         @Override
         public void onClick(final PlaceEntry placeEntry, int action) {
-            if (action == PlaceClickCallback.ACTION_SWITCH) {
-                AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
-                        if (placeEntryUpdate != null) {
-                            placeEntryUpdate.setActive(!placeEntryUpdate.isActive());
-                            mDb.placeDao().update(placeEntryUpdate);
-                        }
-                    }
-                });
-            } else if (action == PlaceClickCallback.ACTION_EDIT) {
-                mPlaceIdEditing = placeEntry.getId();
-                callPlacePicker();
-            } else if (action == PlaceClickCallback.ACTION_REMOVE) {
-                new AlertDialog.Builder(MainActivity.this)
-                        .setIcon(android.R.drawable.ic_dialog_alert)
-                        .setTitle(R.string.remove_place)
-                        .setMessage(R.string.remove_confirmation_msg)
-                        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
-                        {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                AppExecutors.getInstance().diskIO().execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
-                                        if (placeEntryUpdate != null) {
-                                            mDb.placeDao().delete(placeEntryUpdate);
-                                        }
-                                    }
-                                });
+            switch (action) {
+                case PlaceClickCallback.ACTION_SWITCH:
+                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
+                            if (placeEntryUpdate != null) {
+                                placeEntryUpdate.setActive(!placeEntryUpdate.isActive());
+                                mDb.placeDao().update(placeEntryUpdate);
                             }
+                        }
+                    });
+                    break;
+                case PlaceClickCallback.ACTION_EDIT:
+                    mPlaceIdEditing = placeEntry.getId();
+                    callPlacePicker();
+                    break;
+                case PlaceClickCallback.ACTION_REMOVE:
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .setTitle(R.string.remove_place)
+                            .setMessage(R.string.remove_confirmation_msg)
+                            .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            PlaceEntry placeEntryUpdate = mDb.placeDao().findPlaceByPlaceId(placeEntry.getPlaceId());
+                                            if (placeEntryUpdate != null) {
+                                                mDb.placeDao().delete(placeEntryUpdate);
+                                            }
+                                        }
+                                    });
+                                }
 
-                        })
-                        .setNegativeButton(R.string.no, null)
-                        .show();
+                            })
+                            .setNegativeButton(R.string.no, null)
+                            .show();
+                    break;
             }
         }
     };

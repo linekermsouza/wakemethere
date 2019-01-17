@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class WakeMeThereService extends IntentService {
 
-    public static final String ACTION_UPDATE_WAKE_ME_THERE_WIDGETS = "com.udacity.lineker.wakemethere.action.update_wake_me_there_widgets";
+    private static final String ACTION_UPDATE_WAKE_ME_THERE_WIDGETS = "com.udacity.lineker.wakemethere.action.update_wake_me_there_widgets";
 
     public WakeMeThereService() {
         super("WakeMeThereService");

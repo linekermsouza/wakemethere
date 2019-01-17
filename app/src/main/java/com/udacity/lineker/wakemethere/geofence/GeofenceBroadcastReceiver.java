@@ -35,7 +35,7 @@ import java.util.List;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
-    public static final String TAG = GeofenceBroadcastReceiver.class.getSimpleName();
+    private static final String TAG = GeofenceBroadcastReceiver.class.getSimpleName();
     private AppDatabase mDb;
 
     /***
@@ -89,7 +89,6 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
             // Log the error.
             Log.e(TAG, String.format("Unknown transition : %d", geofenceTransition));
             // No need to do anything else
-            return;
         }
 
     }

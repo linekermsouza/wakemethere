@@ -21,11 +21,11 @@ import java.util.List;
  */
 public class WakeMeWidgetProvider extends AppWidgetProvider {
 
-    public static String EXTRA_WORD=
+    public static final String EXTRA_WORD=
             "com.udacity.lineker.wakemethere.WORD";
 
-    static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
-                                List<PlaceEntry> places, int appWidgetId) {
+    private static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
+                                        List<PlaceEntry> places, int appWidgetId) {
 
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.wake_me_widget_provider);
@@ -64,7 +64,7 @@ public class WakeMeWidgetProvider extends AppWidgetProvider {
     }
 
     private static ArrayList<String> getItems(List<PlaceEntry> places) {
-        ArrayList<String> items = new ArrayList<String>();
+        ArrayList<String> items = new ArrayList<>();
         if (places != null) {
             for (PlaceEntry placeEntry : places) {
                 String item = String.format("%s",

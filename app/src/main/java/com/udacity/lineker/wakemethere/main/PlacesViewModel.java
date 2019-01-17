@@ -10,15 +10,13 @@ import com.udacity.lineker.wakemethere.database.PlaceEntry;
 import java.util.List;
 
 public class PlacesViewModel extends AndroidViewModel {
-    private LiveData<List<PlaceEntry>> placeListObservable;
 
     public PlacesViewModel(Application application) {
         super(application);
     }
 
     public LiveData<List<PlaceEntry>> getPlaceListObservable(AppDatabase database) {
-        placeListObservable = database.placeDao().loadAll();
-        return placeListObservable;
+        return database.placeDao().loadAll();
     }
 }
 

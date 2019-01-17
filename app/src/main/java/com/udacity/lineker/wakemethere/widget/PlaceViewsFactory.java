@@ -17,12 +17,11 @@ public class PlaceViewsFactory implements RemoteViewsService.RemoteViewsFactory 
     public static final String EXTRA_APPWIDGET_ID_WAKEME = "EXTRA_APPWIDGET_ID_WAKEME";
     private final ArrayList<String> items;
 
-    private Context ctxt=null;
-    private int appWidgetId;
+    private final Context ctxt;
 
     public PlaceViewsFactory(Context ctxt, Intent intent) {
         this.ctxt=ctxt;
-        appWidgetId=intent.getIntExtra(EXTRA_APPWIDGET_ID_WAKEME,
+        int appWidgetId = intent.getIntExtra(EXTRA_APPWIDGET_ID_WAKEME,
                 AppWidgetManager.INVALID_APPWIDGET_ID);
         items = intent.getStringArrayListExtra(EXTRA_ITEMS);
     }
