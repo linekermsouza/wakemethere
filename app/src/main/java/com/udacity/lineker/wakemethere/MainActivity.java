@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     public static final String TAG = MainActivity.class.getSimpleName();
     private static final int PLACE_PICKER_REQUEST = 1;
     private static final int PERMISSIONS_REQUEST_FINE_LOCATION = 111;
+    private static final String STATE_PLACEID_EDITING = "STATE_PLACEID_EDITING";
 
     private ActivityMainBinding binding;
     private AppDatabase mDb;
@@ -60,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private GoogleApiClient mClient;
     private Geofencing mGeofencing;
     private SimpleArcDialog mDialog;
+    private int mPlaceIdEditing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -254,7 +256,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    private int mPlaceIdEditing;
     private final PlaceClickCallback placeClickCallback = new PlaceClickCallback() {
         @Override
         public void onClick(final PlaceEntry placeEntry, int action) {
@@ -325,5 +326,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             }
         }
         return count < s.length()/2;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putInt(STATE_PLACEID_EDITING, mPlaceIdEditing);
+
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Always call the superclass so it can restore the view hierarchy
+        super.onRestoreInstanceState(savedInstanceState);
+
+        // Restore state members from saved instance
+        mPlaceIdEditing = savedInstanceState.getInt(STATE_PLACEID_EDITING);
     }
 }
